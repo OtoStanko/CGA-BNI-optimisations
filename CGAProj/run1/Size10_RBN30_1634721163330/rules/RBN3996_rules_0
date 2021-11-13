@@ -1,0 +1,10 @@
+0 = 
+1 = NOT(2) OR ( NOT(4) OR ( NOT(6) OR ( NOT(0) OR ( 5 AND ( NOT(8) AND ( 9 AND ( 3)))))))
+2 = 
+3 = NOT(8) OR ( NOT(0))
+4 = 0
+5 = 2
+6 = 0
+7 = 
+8 = 
+9 = NOT(6) AND ( NOT(0))

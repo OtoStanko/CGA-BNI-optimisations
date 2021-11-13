@@ -1,0 +1,16 @@
+Target gene,Regulators
+1
+2,1-,3-
+3,2-
+
+True Positive,3
+True Positive cases,1 -> 2,3 -> 2,2 -> 3,
+False Positive,0
+False Positive cases,
+True Negative,3
+True Negative cases,
+False Negative,0
+False Negative cases,
+Precision,1.0
+True Positive rate (Recall),1.0
+Accuracy,1.0

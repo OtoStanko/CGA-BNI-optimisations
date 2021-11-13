@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Libs">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/commons-math3-3.6.1-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JLibMuta.jar!/" />
+      <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/commons-math3-3.6.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JOCL-0.1.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
