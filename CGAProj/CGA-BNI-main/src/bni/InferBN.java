@@ -720,10 +720,10 @@ public class InferBN {
         // Added code
         //Config.out("Calculating score of network", net.netD.networkName);
         int s = net.netD.nodes.size();
-        net.netD.nodes.get(0).
         for (int count=0; count < s; count++) {
             System.out.println(net.netD.networkName + "-> " + count + ": " + net.netD.nodes.get(count).rule);
-            System.out.println(net.netD.nodes.get(count).NodeState);
+            LogicTable logicTableToPrint = net.netD.nodes.get(count).getLogicTable();
+            System.out.println();
         }
         //System.out.println("*****************");
         // End of Added code
@@ -1316,7 +1316,23 @@ public class InferBN {
             }*///non-parallel evaluation
             
             //parallel evaluation
-            InferBN.paraEvaluate(population, stateSet, this.g_initial_data);
+            //InferBN.paraEvaluate(population, stateSet, this.g_initial_data);  // parallel evaluation
+            //**********************************************
+            // transfer to the non parallel evaluation
+            //**********************************************
+            for (NetInfo elem : population) {
+                if (elem.fitness >= 0) continue;
+                boolean[][] my_states = Utils.copy(Calc.states.get(stateSet).getCurrent());
+                boolean[][] __base_data = g_initial_data.getData();
+                int[] __expGenes = g_initial_data.getExpGenes();
+                int[] __wildTypes = g_initial_data.getWildTypes();
+                boolean[][] my_base_data = Utils.copy(__base_data);
+                int[] my_expGenes = Utils.copy(__expGenes);
+                int[] my_wildTypes = Utils.copy(__wildTypes);
+
+                InferBN.calScore(elem, my_states, my_base_data,
+                        my_expGenes, my_wildTypes);
+            }
             
             for(int i = 0; i < population.size(); i++) {
                 NetInfo net = population.get(i);                
