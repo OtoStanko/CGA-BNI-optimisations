@@ -5,8 +5,8 @@ import bni.comp.GeneBData;
 import bni.comp.NetInfo;
 import bni.comp.Regulator;
 import bni.comp.StatData;
-import java.io.File;
-import java.io.FileNotFoundException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +35,8 @@ import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import static bni.newInitialStatesGenerator.generateInitialStates;
+
 /**
  *
  * @author colin
@@ -56,15 +58,17 @@ public class InferBN {
     
     public static final double SCORE_PRECISION = Math.pow(10, -3);
 //    public static final double GENE_SCORE_PRECISION = Math.pow(10, -2);
-    public static final int SCORE_MAX_CONVERGE = 20; //250;
+    public static final int SCORE_MAX_CONVERGE = 100; //250;
     public static final int GENE_SCORE_NO_CONVERGE = 1000;
     
     public static final int SCORE_NO_NEIGHBORS = 1;
     public static final int SCORE_NO_TRIALS = 100; //100;
-    public static final int SCORE_NO_INITIAL_STATES = 10; //2000;
+    public static final int SCORE_NO_INITIAL_STATES = 10000; //2000;
     
     public static final int GA_MAX_ITERATION = 2000;
-    public static final int GA_POPULATION_SIZE = 8; //20;
+    // size of each population (number of networks in population)
+    public static final int GA_POPULATION_SIZE = 20; //20;
+    // ratio of how many networks from each population wwith best score will be passed to the next population
     public static final double GA_ELITE_RATIO = 0.2;
     
     public static final String DIR_OUTPUT = "out\\";
@@ -75,17 +79,20 @@ public class InferBN {
     public static final int GNW = 1;
     public static final int ECOLI = 2;
     public static final int RBN = 3;
+    public static final int MYDATA = 4;  // index of my data in database
     public static int DATABASE = RBN;
-    
+
+    // number of nodes in DREAM networks
     public static final int[] DREAM3_SIZE_NO = {
-        3, 10//, 50, 100
+        10, 50, 100
     };
-    
+
+    // used for finding adequate folders and files
     public static final String[] DREAM3_SIZE = {
-        "Size3", "Size10"//, "Size50", "Size100"
+        "Size10", "Size50", "Size100"
     };
     public static final String[] DREAM3_SPECIES = {
-        "Ecoli1"//, "Ecoli2", "Yeast1", "Yeast2", "Yeast3"
+        "Ecoli1", "Ecoli2", "Yeast1", "Yeast2", "Yeast3"
     };
     
     public static final int[] DREAM3_MAX_NO_EDGES = {
@@ -96,7 +103,16 @@ public class InferBN {
     public static String DIR_DATA = DIR_BASE + "Inference\\DREAM3 in silico challenge\\__DREAM_SIZE__\\DREAM3 data\\";
     public static String FILE_KO = "InSilico__DREAM_SIZE__-__DREAM_SPECIES__-null-mutants.tsv.bool.csv";
     public static String FILE_NET = DIR_BASE + "Inference\\DREAM3 in silico challenge\\__DREAM_SIZE__\\Networks\\InSilico__DREAM_SIZE__-__DREAM_SPECIES__.tsv";    
-        
+
+    //--- my data section
+    public static final String[] MY_DATA_SPECIES = {
+            "first"
+    };
+
+    public static String DIR_MyData = DIR_BASE + "Inference\\My_data\\__SIZE__\\Data\\";
+    public static String DIR_MyData_FILE = "SIZE-SPIECES-bool.csv";
+    public static String DIR_MyData_NET = DIR_BASE + "Inference\\My_data\\__SIZE__\\Networs\\";
+
     //--- E. coli section (M3D & regulonDB)
     public static String E_COLI_DIR = DIR_BASE + "Inference\\E_coli_v4_Build_6\\";
     public static String E_COLI_FILE = "E_coli_v4_Build_6_exps466_ko.csv.bool.csv";
@@ -148,7 +164,7 @@ public class InferBN {
         
         if(typeExperiment.equalsIgnoreCase("dream")) {
             TF_TG_CORR_DIFF_SAMESIGN = true;
-            GENE_CORREL_THRESH_MID = 0.5;
+            GENE_CORREL_THRESH_MID = 0.6;
             DATABASE = DREAM3;
         }
         
@@ -156,16 +172,24 @@ public class InferBN {
             OFFSET_COL_EXP_DATA = 2;
             DATABASE = RBN;
         }
+
+        if(typeExperiment.equalsIgnoreCase("mydata")) {
+            TF_TG_CORR_DIFF_SAMESIGN = true;
+            GENE_CORREL_THRESH_MID = 0.6;
+            DATABASE = MYDATA;
+        }
         
         
         execute(noTrials);
     }
     
     public static void execute(int noTrials) throws FileNotFoundException, InterruptedException {
-        
+
+        // To DO section with runs needs to be moved after constraints are computer
         for(int run = 1; run <= noTrials; ++run) {
             File theDir = new File("run" + run + "\\");
-            
+
+            // create trial subdirectory if it does not exist yet
             if (!theDir.exists()) {
                 try {
                     theDir.mkdir();
@@ -173,8 +197,19 @@ public class InferBN {
                 } catch (SecurityException se) {                    
                 }
             }
-            
-            if(DATABASE == DREAM3) {
+            // END of TO DO
+
+
+            if(DATABASE == MYDATA) {  //  Added by me for my own networks
+                // TO DO - check and test
+                for (int sp = 0; sp < MY_DATA_SPECIES.length; sp++) {
+                    Calc.datas.clear();
+                    System.gc();
+                    GeneBData g_data = null;
+                    infer_DREAM(theDir.getName(), -1, sp, g_data, null, null, null, -1);
+                }
+            // add proper info to infer_DREAM call - how many networks will there be in my directory
+            } else if(DATABASE == DREAM3) {
             for (int actSize = 0; actSize < DREAM3_SIZE.length; actSize++) {
                 for (int sp = 0; sp < DREAM3_SPECIES.length; sp++) {
                     Calc.datas.clear();
@@ -282,7 +317,15 @@ public class InferBN {
     public static void infer_DREAM(String workDir, int actSize, int sp, 
             GeneBData g_initial_data, 
             String fileKO, String pathOriginNetw, String prexName, int numGenes) 
-            throws FileNotFoundException, InterruptedException {                        
+            throws FileNotFoundException, InterruptedException {
+        /*
+        workDir - directory above run directories
+        actSize - can be -1 for some reason
+        sp      - can be -1 for some reason
+        fileKO  - file with knockouts and steady state data
+        pathOriginNetw - file with original network i.e: G1 G2 +
+        numGenes- number of nodes
+        */
         
         if(DATABASE == DREAM3) {           
             String path = DIR_DATA.replace("__DREAM_SIZE__", DREAM3_SIZE[actSize]);
@@ -296,12 +339,15 @@ public class InferBN {
             numGenes = DREAM3_SIZE_NO[actSize];
             prexName = DREAM3_SIZE[actSize] + "_" + DREAM3_SPECIES[sp];
         }
-        
+
+        // 1 - creating folders
         String[] dirs = createFolders(workDir, prexName + "_" + System.currentTimeMillis());
         GeneBData gOrigin = Utils.loadOriginNetwork(pathOriginNetw, numGenes);
         //gOrigin.outputDownStream(paras[0] + "origin.csv", ",");
-                    
+
+        // 2 - loading initial data and computing constraints
         if(g_initial_data == null) {
+            // computing constraints inside
             g_initial_data = get_initialData(fileKO, numGenes, OFFSET_COL_EXP_DATA);        
         } else {
             String[][] data = Utils.loadTextFile(fileKO, ",", false);
@@ -316,8 +362,17 @@ public class InferBN {
             
             Config.out("infer_DREAM", "Retrieved experiment data!");
         }
+
+        /*
+        TO DO apply:
+        now constraints are computed and saved inside g_initial_data
+        - try to create appropriate folders and subfolders
+        - move step 1 here - dirs are not needed in constrains computation
+        - function *infer* should be inside for cycle = runs
+         */
         
         Config.out("infer_DREAM", "Searching Boolean networks ...");
+        // 3 - inferring
         infer(g_initial_data, gOrigin, dirs, prexName);
     }
     
@@ -332,24 +387,33 @@ public class InferBN {
         
         Config.out("infer_ECOLI", "Searching Boolean networks ...");
         infer(g_initial_data, gOrigin, dirs, "Size1424_Ecoli");
+
     }
-    
+
+    /*
+    g_initial_data - info from txt files, matrices
+    gOrigin - actual structure, wanted network
+     */
     public static void infer(GeneBData g_initial_data, GeneBData gOrigin, 
-            String[] dirs, String prexName) throws FileNotFoundException, InterruptedException {
+            String[] dirs, String prexName) throws InterruptedException, FileNotFoundException {
         
         InferBN infBN = new InferBN(g_initial_data);
         long startTime = System.currentTimeMillis();
 //        ArrayList<NetInfo> optimalNets = infBN.searchBN(1024, 
 //                SCORE_MAX_ITERATION, SCORE_NO_CONVERGE, SCORE_NO_NEIGHBORS);
+
+        // 3.1. - copmute and return optimal nets - gro of simulation part
         ArrayList<NetInfo> optimalNets = infBN.GA_searchBN(SCORE_NO_INITIAL_STATES, 
-                GA_MAX_ITERATION, SCORE_MAX_CONVERGE, GA_POPULATION_SIZE, GA_ELITE_RATIO);
+                GA_MAX_ITERATION, SCORE_MAX_CONVERGE, GA_POPULATION_SIZE, GA_ELITE_RATIO, dirs);
         if(optimalNets.isEmpty()) return;
         
         long searchTime = (System.currentTimeMillis() - startTime) / 1000;
         Config.out("infer", "Finished searching in " + searchTime + " seconds.");
+        // 3.2. - write dynamics accuracy results into the files
         Utils.outputDynamicsAccuracy(dirs[0] + prexName,
                 optimalNets, searchTime, DELIM);
-        
+
+        // 3.3. - write rules of each BN into the file
         ArrayList<StatData> stats = new ArrayList<StatData>();
         for(NetInfo net: optimalNets) {
             Node.createRules(net.netD.nodes);
@@ -384,8 +448,9 @@ public class InferBN {
         } else {
             gdata.setWildTypes(Utils.parseIntData(data, 1));
         }
-                            
-        gdata.findRegulators();
+
+        // constraints
+        gdata.findRegulators();  // compute constraints
         
         System.out.println("Found initial regulators successfully!");
         return gdata;
@@ -706,7 +771,10 @@ public class InferBN {
         
         return data;
     }
-    
+
+    /*
+    For given network calculate score.
+     */
     public static void calScore(NetInfo net, boolean[][] states,
                                 boolean[][] base_data, int[] expGenes, int[] wildTypes) {
 //        long startTime = System.currentTimeMillis();
@@ -718,6 +786,7 @@ public class InferBN {
 
 
         // Added code
+        /*
         //Config.out("Calculating score of network", net.netD.networkName);
         int s = net.netD.nodes.size();
         for (int count=0; count < s; count++) {
@@ -725,7 +794,7 @@ public class InferBN {
             LogicTable logicTableToPrint = net.netD.nodes.get(count).getLogicTable();
             System.out.println();
         }
-        //System.out.println("*****************");
+        */
         // End of Added code
         
         //Find all wild-type attractors
@@ -1248,7 +1317,7 @@ public class InferBN {
     }
     
     private static String[] createFolders(String workDir, String rep) {
-        String[] dirs = {DIR_OUTPUT, DIR_OUTPUT_RULE, DIR_OUTPUT_STRUCTS};
+        String[] dirs = {DIR_OUTPUT, DIR_OUTPUT_RULE, DIR_OUTPUT_STRUCTS, "out\\myData\\"};
 
         for (int i = 0; i < dirs.length; i++) {
             dirs[i] = workDir + "\\" + dirs[i];
@@ -1270,13 +1339,14 @@ public class InferBN {
     }
     
     public ArrayList<NetInfo> GA_searchBN(int noStates, 
-            int maxIteration, int maxConverge, int populationSize, double eliteRatio) throws InterruptedException {
+            int maxIteration, int maxConverge, int populationSize, double eliteRatio, String[] dirs) throws InterruptedException{
         int numGenes = g_initial_data.numGenes;
 //        boolean[][] data = g_initial_data.getData();
         ArrayList<NetInfo> population = new ArrayList<NetInfo>();
         int eliteSize = (int)Math.ceil(eliteRatio * populationSize);
         int noNet;
-                
+
+        // create population of initial networks
         for(noNet = 1; noNet <= populationSize; noNet++) {
             String netName = "RBN" + String.valueOf(noNet);
             NetInfo initNet = this.createRBN_BA(netName, numGenes, BA_EDGE_TO_ADD, 
@@ -1289,14 +1359,23 @@ public class InferBN {
             population.add(initNet);
         }
         Config.out("GA_searchBN", "Created an initial population of random boolean networks!");
-        String stateSet = NetData.generateInitialStates("RBN1", String.valueOf(noStates));                        
-                
-                
+
+        //String stateSet = NetData.generateInitialStates("RBN1", String.valueOf(noStates));
+        // until I decompile jar files, new copies of old functions are used located in newInitialStatesGenerator
+        String stateSet = null;
+        try {
+            stateSet = generateInitialStates("RBN1", String.valueOf(noStates), dirs);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         double bestFitness = Double.MIN_VALUE;        
         int noIter = 0;
         int noConvergeF = 0;
         boolean done = false;
-        
+        int endingReason = 0;
+
         while (true) {
             ++ noIter;                        
 //            System.out.println("Processing the network: " + net.netD.networkName + " -------------------------------------------------------------------->>>");
@@ -1316,11 +1395,11 @@ public class InferBN {
             }*///non-parallel evaluation
             
             //parallel evaluation
-            //InferBN.paraEvaluate(population, stateSet, this.g_initial_data);  // parallel evaluation
-            //**********************************************
+            InferBN.paraEvaluate(population, stateSet, this.g_initial_data);  // parallel evaluation
+            //     **********************************************
             // transfer to the non parallel evaluation
             //**********************************************
-            for (NetInfo elem : population) {
+            /*for (NetInfo elem : population) {
                 if (elem.fitness >= 0) continue;
                 boolean[][] my_states = Utils.copy(Calc.states.get(stateSet).getCurrent());
                 boolean[][] __base_data = g_initial_data.getData();
@@ -1332,7 +1411,8 @@ public class InferBN {
 
                 InferBN.calScore(elem, my_states, my_base_data,
                         my_expGenes, my_wildTypes);
-            }
+            }*/
+            //************************************************
             
             for(int i = 0; i < population.size(); i++) {
                 NetInfo net = population.get(i);                
@@ -1347,6 +1427,8 @@ public class InferBN {
             
             if(population.isEmpty()) {
                 Config.out("GA_searchBN", "Failed to calculate score of all networks! Stoped!");
+                Config.out("GA_searchBN", "Number of iterations: " + noIter);
+                //endingReason = 0;
                 break;
             }
             
@@ -1365,23 +1447,28 @@ public class InferBN {
                 
                 if(noConvergeF >= maxConverge) {
                     Config.out("GA_searchBN", "The best fitness is converged! Stoped!");
+                    Config.out("GA_searchBN", "Number of iterations: " + noIter);
+                    endingReason = 1;  // there has been no improvement in last NoConverge iters
                     break;
                 }
             } else {
                 if(cur_fitness - bestFitness > SCORE_PRECISION) {
                     bestFitness = cur_fitness;
-                    noConvergeF = 1;                    
-                }  //cur_fitness is bad
-
+                    noConvergeF = 1;  // reset best fitness streak counter
+                }  //cur_fitness has been improved
             }
             
             if(Math.abs(cur_fitness - 1) <= SCORE_PRECISION) {
                 Config.out("GA_searchBN", "Found perfect or nearly perfect networks! Stoped!");
+                Config.out("GA_searchBN", "Number of iterations: " + noIter);
+                endingReason = 2;  // score is really high
                 break;
             }                        
             
             if(noIter >= maxIteration) {
                 Config.out("GA_searchBN", "The maximum number of iterations is reached! Stoped!");
+                Config.out("GA_searchBN", "Number of iterations: " + noIter);
+                endingReason = 3;  // upper limit of iterations has been reached
                 break;
             }                                    
             
@@ -1439,6 +1526,8 @@ public class InferBN {
             }
             if(cnt == 0) {
                 Config.out("GA_searchBN", "Cannot produce new members from the current population! Stoped!");
+                Config.out("GA_searchBN", "Number of iterations: " + noIter);
+                endingReason = 4;
                 break;
             }
                                                                                     
@@ -1480,6 +1569,18 @@ public class InferBN {
         System.gc();                
         
         Config.out("GA_searchBN", "Found " + optimalNets.size() + " optimal networks with fitness = " + bestFitness);
+        //Config.out("GA_searchBN", "Number of iterations: " + noIter);
+
+        //Write number of iterations passed to the file
+        try {
+            FileWriter fw = new FileWriter(dirs[dirs.length-1] + "generatedStates.txt", true);
+            fw.write(Integer.toString(noIter) + " " + Integer.toString(endingReason));
+            fw.close();
+        }
+        catch(IOException e) {
+        }
+        //end of block
+
         return optimalNets;
     }
         

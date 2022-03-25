@@ -1,8 +1,10 @@
 package bni.comp;
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+
 import mod.Mutation;
 import mod.jmut.core.comp.Node;
+
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EdgeAddition2 implements Mutation {
     int pos;

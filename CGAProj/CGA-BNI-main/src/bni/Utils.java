@@ -34,7 +34,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
  */
 public class Utils {
     public static String[][] loadTextFile(String filePath, String delim, boolean ignoreFirstLine) {
-        String [][] data;   //foramt: [col][row]
+        String [][] data;   //format: [col][row]
         int iL = 0;
         try {
             int numLines = countLines(filePath);
@@ -257,7 +257,7 @@ public class Utils {
     public static int minus(boolean b1, boolean b2) {
         if(b1 == b2) return 0;
         else {
-            if(b1 == true) return 1;
+            if(b1) return 1;
             else return -1;
         }
     }
