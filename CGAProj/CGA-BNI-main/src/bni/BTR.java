@@ -26,7 +26,8 @@ public class BTR {
     public static GeneBData loadPredictedNetwork(String path, int numGenes) {
         String [][] data = Utils.loadTextFile(path, ",", true);
         GeneBData gdata = new GeneBData(numGenes);
-        
+
+        assert data != null;
         int numLines = data[0].length;
         HashMap<Integer, TreeSet<Regulator>> regulators = gdata.getRegulators();
         
@@ -38,9 +39,9 @@ public class BTR {
             if(strtype.equals("inhibits")) type = -1;
             
             String[] srcs = data[0][l].split("&");
-            for(int g = 0; g < srcs.length; g++) {
-                int srcGene = Integer.parseInt(srcs[g].substring(1));
-            
+            for (String src : srcs) {
+                int srcGene = Integer.parseInt(src.substring(1));
+
                 regulators.get(tarGene).add(new Regulator(srcGene, type, 0));
             }
         }
@@ -52,21 +53,21 @@ public class BTR {
     public static void BTR_DREAM(int actSize) throws FileNotFoundException {        
         
         String outDir = BTR_DIR.replace("__DREAM_SIZE__", DREAM3_SIZE[actSize]);
-        ArrayList<StatData> stats = new ArrayList<StatData>();
-        
-        for (int sp = 0; sp < DREAM3_SPECIES.length; sp++) {
+        ArrayList<StatData> stats = new ArrayList<>();
+
+        for (String dream3Specy : DREAM3_SPECIES) {
             String pathOriginNetw = FILE_NET.replace("__DREAM_SIZE__", DREAM3_SIZE[actSize]);
-            pathOriginNetw = pathOriginNetw.replace("__DREAM_SPECIES__", DREAM3_SPECIES[sp]);
+            pathOriginNetw = pathOriginNetw.replace("__DREAM_SPECIES__", dream3Specy);
 
             GeneBData gOrigin = Utils.loadOriginNetwork(pathOriginNetw, DREAM3_SIZE_NO[actSize]);
-        
-            String outPath = outDir + DREAM3_SPECIES[sp] + "_edges.csv";
+
+            String outPath = outDir + dream3Specy + "_edges.csv";
             GeneBData gdata = loadPredictedNetwork(outPath, DREAM3_SIZE_NO[actSize]);
-            
+
             StatData stat = new StatData(gOrigin, gdata);
             stat.stat();
-            stat.output(outDir + DREAM3_SPECIES[sp] + "_metrics.csv", ",");
-            
+            stat.output(outDir + dream3Specy + "_metrics.csv", ",");
+
             stats.add(stat);
         }        
         

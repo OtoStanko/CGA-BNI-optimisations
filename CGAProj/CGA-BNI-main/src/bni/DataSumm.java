@@ -4,13 +4,13 @@
  */
 package bni;
 
-import static bni.ARACNE.ARACNE_DIR;
+//import static bni.ARACNE.ARACNE_DIR;
 import static bni.InferBN.DIR_BASE;
-import static bni.InferBN.DREAM3_SIZE;
+//import static bni.InferBN.DREAM3_SIZE;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
+//import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +24,14 @@ public class DataSumm {
     
     public static void analyze_TrialFolder(File folder, String match, Metric mtr) {
 //        File folder = new File(path);
-        File[] subFolders = folder.listFiles();        
-        
-        for (int i = 0; i < subFolders.length; i++) {
-            if (! subFolders[i].isDirectory()) continue;            
-            
-            if(subFolders[i].getName().contains(match)) {
-                analyze_ResultFolder(subFolders[i], mtr);
+        File[] subFolders = folder.listFiles();
+
+        assert subFolders != null;
+        for (File subFolder : subFolders) {
+            if (!subFolder.isDirectory()) continue;
+
+            if (subFolder.getName().contains(match)) {
+                analyze_ResultFolder(subFolder, mtr);
             }
         }
     }
@@ -39,34 +40,35 @@ public class DataSumm {
         //DREAM3_SIZE_DREAM3_SPECIES folder
         File[] files = folder.listFiles();
 
-        for (int f = 0; f < files.length; f++) {
-            if (!files[f].isFile()) {
+        assert files != null;
+        for (File file : files) {
+            if (!file.isFile()) {
                 continue;
             }
 
-            if(files[f].getName().contains("_net.csv")) {
-                String [][] data = Utils.loadTextFile(files[f].getPath(), ",", false);
-                
+            if (file.getName().contains("_net.csv")) {
+                String[][] data = Utils.loadTextFile(file.getPath(), ",", false);
+
+                assert data != null;
                 mtr.add_Dynamic(Double.parseDouble(data[1][2]), Double.parseDouble(data[1][0]));
                 continue;
             }
-            
-            if(files[f].getName().contains("_struct_avg.csv")) {
-                String [][] data = Utils.loadTextFile(files[f].getPath(), ",", false);                
+
+            if (file.getName().contains("_struct_avg.csv")) {
+                String[][] data = Utils.loadTextFile(file.getPath(), ",", false);
+                assert data != null;
                 int lastLine = data[0].length - 1;
-                                                    
+
                 double prec = Double.parseDouble(data[1][lastLine]);
                 double tpr = Double.parseDouble(data[2][lastLine]);
-                
-                mtr.add_Structure(prec, 
-                                    tpr, 
-                                    Double.parseDouble(data[3][lastLine]));
-                
-                if(prec < 0.5 || tpr < 0.3) {
+
+                mtr.add_Structure(prec,
+                        tpr,
+                        Double.parseDouble(data[3][lastLine]));
+
+                if (prec < 0.5 || tpr < 0.3) {
                     System.out.println("Weak result = " + folder.getName());
                 }
-                
-                continue;
             }
         } 
     }
@@ -85,23 +87,20 @@ public class DataSumm {
         String[] RBN_sizes = new String[NO_SIZES];
         
         for(int i = 0; i < NO_SIZES; i++) {
-            RBN_sizes[i] = "Size" + String.valueOf( 10 * (i + 1) );
+            RBN_sizes[i] = "Size" + 10 * (i + 1);
         }
-        
-        for (int i = 0; i < methods.length; i++) {
-            System.out.println(methods[i] + " summarizing ...");
-            
-            if(InferBN.DATABASE == InferBN.DREAM3) {
-                analyze(DIR_RESULTS + "DREAM3\\Parallel_noSign\\", methods[i], ",", InferBN.DREAM3_SIZE);
-            } else 
-            if(InferBN.DATABASE == InferBN.GNW) {
-                analyze(DIR_RESULTS + "GNW\\", methods[i], ",", InferBN.GNW_SIZE);
-            } else 
-            if(InferBN.DATABASE == InferBN.ECOLI) {
-                analyze(DIR_RESULTS + "ECOLI\\", methods[i] + "_ECOLI", ",", ecoliSize);
-            } else 
-            if(InferBN.DATABASE == InferBN.RBN) {
-                analyze(DIR_RESULTS + "RBN\\", methods[i] + "_RBN", ",", RBN_sizes);
+
+        for (String method : methods) {
+            System.out.println(method + " summarizing ...");
+
+            if (InferBN.DATABASE == InferBN.DREAM3) {
+                analyze(DIR_RESULTS + "DREAM3\\Parallel_noSign\\", method, ",", InferBN.DREAM3_SIZE);
+            } else if (InferBN.DATABASE == InferBN.GNW) {
+                analyze(DIR_RESULTS + "GNW\\", method, ",", InferBN.GNW_SIZE);
+            } else if (InferBN.DATABASE == InferBN.ECOLI) {
+                analyze(DIR_RESULTS + "ECOLI\\", method + "_ECOLI", ",", ecoliSize);
+            } else if (InferBN.DATABASE == InferBN.RBN) {
+                analyze(DIR_RESULTS + "RBN\\", method + "_RBN", ",", RBN_sizes);
             }
         }
     }
@@ -116,18 +115,19 @@ public class DataSumm {
                 + del + "S_acc std" + del + "Time std");
         
         File folder = new File(path);
-        File[] trialFolders = folder.listFiles(); 
-            
-        for (int actSize = 0; actSize < sizes.length; actSize++) {
-            String matchName = sizes[actSize] + "_";
-            Metric mtr = new Metric(matchName);                        
-            
-            for (int i = 0; i < trialFolders.length; i++) {
-                if (! trialFolders[i].isDirectory()) continue;   
-                
-                analyze_TrialFolder(trialFolders[i], matchName, mtr);
+        File[] trialFolders = folder.listFiles();
+
+        for (String size : sizes) {
+            String matchName = size + "_";
+            Metric mtr = new Metric(matchName);
+
+            assert trialFolders != null;
+            for (File trialFolder : trialFolders) {
+                if (!trialFolder.isDirectory()) continue;
+
+                analyze_TrialFolder(trialFolder, matchName, mtr);
             }
-            
+
             mtr.out(pw, del);
         }
         
@@ -146,12 +146,12 @@ class Metric {
     String matchName;
     
     public Metric(String matchName) {
-        this.Precision = new ArrayList<Double>();
-        this.TPR = new ArrayList<Double>();
-        this.S_Accuracy = new ArrayList<Double>();
+        this.Precision = new ArrayList<>();
+        this.TPR = new ArrayList<>();
+        this.S_Accuracy = new ArrayList<>();
         
-        this.D_Accuracy = new ArrayList<Double>();
-        this.searchTime = new ArrayList<Double>();
+        this.D_Accuracy = new ArrayList<>();
+        this.searchTime = new ArrayList<>();
         
         this.matchName = matchName;
     }
@@ -178,7 +178,7 @@ class Metric {
     public void out(PrintWriter pw, String del) {
         System.out.println(this.matchName + " = " + this.D_Accuracy.size());
         
-        List<List<Double>> metrics = new ArrayList<List<Double>>();
+        List<List<Double>> metrics = new ArrayList<>();
         metrics.add(this.D_Accuracy);
         metrics.add(this.Precision);
         metrics.add(this.TPR);

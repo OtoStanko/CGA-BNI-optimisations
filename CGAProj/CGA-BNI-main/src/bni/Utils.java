@@ -12,15 +12,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
+
 import mod.jmut.core.comp.Interaction;
 import mod.jmut.core.comp.LogicTable;
 import mod.jmut.core.comp.NetData;
@@ -100,10 +93,8 @@ public class Utils {
 
                 String[] params = line.split(delim, -1);
                 data[iL] = new String[params.length];
-                
-                for(int c = 0; c < params.length; c ++) {
-                    data[iL][c] = params[c];
-                }
+
+                System.arraycopy(params, 0, data[iL], 0, params.length);
                 ++ iL;
             }
             
@@ -167,7 +158,8 @@ public class Utils {
     public static GeneBData loadOriginNetwork(String path, int numGenes) {
         String [][] data = Utils.loadTextFile(path, "\\t", false);
         GeneBData gdata = new GeneBData(numGenes);
-        
+
+        assert data != null;
         gdata.loadGoldData(data);
         return gdata;
     }
@@ -181,7 +173,7 @@ public class Utils {
         
         for(int l = 0; l < numLines; l ++) {
             for(int c = colStart; c <= colEnd; c ++) {
-                results[l][c - colStart] = data[c][l].equals("1")? true: false;
+                results[l][c - colStart] = data[c][l].equals("1");
             }
         }
         return results;
@@ -227,8 +219,7 @@ public class Utils {
         
         for(int l = 0; l < numLines; l ++) {
             for(int c = 0; c < numCols; c ++) {
-                if(data[l][c] == true) results[l][c] = 1;
-                else results[l][c] = 0;
+                results[l][c] = data[l][c] ?1:0;
             }
         }
         return results;
@@ -236,10 +227,8 @@ public class Utils {
     
     public static int[] makeIntArray(int len, int dvalue) {
         int[] arr = new int[len];
-        
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = dvalue;
-        }
+
+        Arrays.fill(arr, dvalue);
         return arr;
     }
     
@@ -279,9 +268,9 @@ public class Utils {
     public static double std(double[] someArray, double mean) {
         double res = 0;
         int N = someArray.length;
-        
-        for (int i = 0; i < N; i++) {
-            res += Math.pow(someArray[i] - mean, 2);
+
+        for (double v : someArray) {
+            res += Math.pow(v - mean, 2);
         }
         
         res = Math.sqrt(res / N);
@@ -319,7 +308,7 @@ public class Utils {
         return found;
     }
     
-    public static boolean exist(boolean value, boolean[] array) {
+    public static boolean exist_inverted(boolean value, boolean[] array) {
         boolean found = false;
         
         for(boolean v: array) {
@@ -328,10 +317,10 @@ public class Utils {
                 break;
             }
         }
-        return found;
+        return !found;
     }
     
-    public static boolean exist(int value, ArrayList<Integer> array) {
+    public static boolean exist_inverted(int value, ArrayList<Integer> array) {
         boolean found = false;
         
         for(int v: array) {
@@ -340,10 +329,10 @@ public class Utils {
                 break;
             }
         }
-        return found;
+        return !found;
     }
     
-    public static boolean exist(int gene, Set<Regulator> regulators) {
+    /*public static boolean exist(int gene, Set<Regulator> regulators) {
         boolean found = false;
         
         for(Regulator rg: regulators) {
@@ -353,7 +342,7 @@ public class Utils {
             }
         }
         return found;
-    }
+    }*/
     
     public static int index(int value, int[] array) {
         int id = -1;
@@ -379,20 +368,20 @@ public class Utils {
         return id;
     }
     
-    public static int[] convertIntegers(List<Integer> integers) {
+    /*public static int[] convertIntegers(List<Integer> integers) {
         int[] ret = new int[integers.size()];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = integers.get(i).intValue();
+            ret[i] = integers.get(i);
         }
         return ret;
-    }
+    }*/
     
     public static boolean[][] convert_2DBool(String state) {
         int numNodes = state.length();
         boolean[][] bstate = new boolean[1][numNodes];
         
         for(int i = 0; i < numNodes; i ++) {
-            bstate[0][i] = state.charAt(i) == '0' ? false : true;
+            bstate[0][i] = state.charAt(i) != '0';
         }    
         return bstate;
     }
@@ -439,19 +428,19 @@ public class Utils {
         }
     }
     
-    public static void outputDynamicsAccuracy(String path, ArrayList<NetInfo> optimalNets, long searchTime, String del) throws FileNotFoundException {
+    public static void outputDynamicsAccuracy(String path, ArrayList<NetInfo> optimalNets,
+                                              long searchTime, String del) throws FileNotFoundException {
         PrintWriter pw_net = new PrintWriter(new FileOutputStream(path + "_net.csv"),true);                
         PrintWriter pw_node = new PrintWriter(new FileOutputStream(path + "_node.csv"),true);                
         
         pw_net.println("Search time" + del + searchTime);
         pw_net.println("Network" + del + "Dynamics Accuracy");        
-        pw_node.println("Network" + del + "Gene" + del + "Absolute distance");        
-        
-        for(int i = 0; i < optimalNets.size(); i ++) {
-            NetInfo net = optimalNets.get(i);
+        pw_node.println("Network" + del + "Gene" + del + "Absolute distance");
+
+        for (NetInfo net : optimalNets) {
             pw_net.println(net.netD.networkName + del + (1 - net.avg_score));
-            
-            for(int g = 0; g < net.netD.nodes.size(); g ++) {
+
+            for (int g = 0; g < net.netD.nodes.size(); g++) {
                 pw_node.println(net.netD.networkName + del + net.netD.nodes.get(g).NodeID
                         + del + net.g_scores[g]);
             }
@@ -613,7 +602,7 @@ public class Utils {
             }
         }
         
-        if(force == true) {
+        if(force) {
             Utils.copy(new_posPaths, posPaths);
             Utils.copy(new_negPaths, negPaths);
             return true;
@@ -719,7 +708,8 @@ public class Utils {
     public static GeneBData load_GENEI3_results(String path, int numGenes, int maxNoEdges) {
         String [][] data = Utils.loadTextFile(path, "\\t", false);
         GeneBData gdata = new GeneBData(numGenes);
-        
+
+        assert data != null;
         int numLines = data[0].length;
         double[] scores = Utils.parseDoubleData(data, 2);
         double mean = Utils.sum(scores) / numLines;
@@ -747,7 +737,8 @@ public class Utils {
     public static GeneBData load_ARACNE_results(String path, int numGenes, int maxNoEdges) {
         String [][] data = Utils.loadTextFile_byRow(path, "\\t", false);
         GeneBData gdata = new GeneBData(numGenes);
-        
+
+        assert data != null;
         int numLines = data.length;
         int type = 1; 
 //        double[] scores = Utils.parseDoubleData(data, 2);
@@ -755,17 +746,17 @@ public class Utils {
 //        System.out.println("[load_GENEI3_results] mean = " + mean);
                 
         HashMap<String, Double> passedMap = new HashMap<String, Double>();
-        
-        for(int li = 0; li < numLines; li ++) {
 
-            if(data[li].length < 3) continue;
-            
-            int srcGene = Integer.parseInt(data[li][0].substring(1));
-            
-            for(int tg = 1; tg < data[li].length; tg += 2) {
-                int tarGene = Integer.parseInt(data[li][tg].substring(1));                           
+        for (String[] datum : data) {
 
-                double mi = Double.parseDouble(data[li][tg + 1]);
+            if (datum.length < 3) continue;
+
+            int srcGene = Integer.parseInt(datum[0].substring(1));
+
+            for (int tg = 1; tg < datum.length; tg += 2) {
+                int tarGene = Integer.parseInt(datum[tg].substring(1));
+
+                double mi = Double.parseDouble(datum[tg + 1]);
                 passedMap.put(srcGene + "_" + tarGene, mi);
             }
         }
@@ -795,20 +786,21 @@ public class Utils {
     public static GeneBData load_BC3NET_results(String path, int numGenes) {
         String [][] data = Utils.loadTextFile_byRow(path, "\\s+", false);
         GeneBData gdata = new GeneBData(numGenes);
-        
-        int numLines = data.length;
+
+        assert data != null;
+        //int numLines = data.length;
         int type = 1; 
 //        double[] scores = Utils.parseDoubleData(data, 2);
 //        double mean = Utils.sum(scores) / numLines;
 //        System.out.println("[load_GENEI3_results] mean = " + mean);
         
-        HashMap<Integer, TreeSet<Regulator>> regulators = gdata.getRegulators();        
-        
-        for(int li = 0; li < numLines; li ++) {
-            if(data[li].length < 3) continue;
-            
-            int srcGene = Integer.parseInt(data[li][0].substring(1));                        
-            int tarGene = Integer.parseInt(data[li][1].substring(1));                           
+        HashMap<Integer, TreeSet<Regulator>> regulators = gdata.getRegulators();
+
+        for (String[] datum : data) {
+            if (datum.length < 3) continue;
+
+            int srcGene = Integer.parseInt(datum[0].substring(1));
+            int tarGene = Integer.parseInt(datum[1].substring(1));
 
             regulators.get(tarGene).add(new Regulator(srcGene, type, 0));
             regulators.get(srcGene).add(new Regulator(tarGene, type, 0));
@@ -868,8 +860,8 @@ public class Utils {
         
         for(int i = 0; i < netD.rndina.size(); i++) {
             Interaction ina = netD.rndina.get(i);
-            String src = "G" + String.valueOf( Integer.valueOf(ina.NodeSrc) + 1 );
-            String dst = "G" + String.valueOf( Integer.valueOf(ina.NodeDst) + 1 );
+            String src = "G" + (Integer.parseInt(ina.NodeSrc) + 1);
+            String dst = "G" + (Integer.parseInt(ina.NodeDst) + 1);
             String sign = "+";
             if(ina.InteractionType == -1) sign = "-";
             
@@ -883,15 +875,13 @@ public class Utils {
         List<String> mapKeys = new ArrayList(passedMap.keySet());
         List<Double> mapValues = new ArrayList(passedMap.values());
         
-        Collections.sort(mapValues, Collections.reverseOrder());
+        mapValues.sort(Collections.reverseOrder());
         Collections.sort(mapKeys);
 
         LinkedHashMap<String, Double> sortedMap =
                 new LinkedHashMap();
 
-        Iterator<Double> valueIt = mapValues.iterator();
-        while (valueIt.hasNext()) {
-            double val = valueIt.next();
+        for (double val : mapValues) {
             Iterator<String> keyIt = mapKeys.iterator();
 
             while (keyIt.hasNext()) {

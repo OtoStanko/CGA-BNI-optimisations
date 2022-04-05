@@ -193,7 +193,7 @@ public class ARACNE {
 
                     Calc.datas.clear();
                     System.gc();
-                    infer_DREAM(theDir.getName(), actSize, sp, g_data, 
+                    infer_DREAM(1, actSize, sp, g_data,
                             koFile, netFile, prexName, numGenes);
                 }
             }//end for: files

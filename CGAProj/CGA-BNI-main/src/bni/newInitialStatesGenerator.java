@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -19,7 +18,7 @@ public class newInitialStatesGenerator {
         try {
             numNodes = Integer.parseInt(network);
         } catch (Exception var8) {
-            mod.jmut.core.comp.NetData netD = (mod.jmut.core.comp.NetData) mod.jmut.core.Calc.datas.get(network);
+            mod.jmut.core.comp.NetData netD = mod.jmut.core.Calc.datas.get(network);
             if (netD == null) {
                 return null;
             }
@@ -27,18 +26,18 @@ public class newInitialStatesGenerator {
             numNodes = netD.nodes.size();
         }
 
-        int NumOfAllPossibleStates = (int)Math.pow(2.0D, (double)numNodes);
+        int NumOfAllPossibleStates = (int)Math.pow(2.0D, numNodes);
         int noStates;
         if (numStates.equalsIgnoreCase("all")) {
             noStates = NumOfAllPossibleStates;
         } else {
-            noStates = Integer.valueOf(numStates);
+            noStates = Integer.parseInt(numStates);
             if (noStates > NumOfAllPossibleStates) {
                 noStates = NumOfAllPossibleStates;
             }
         }
 
-        Set<String> ExaminingStates = generateInitialStates((long)noStates, numNodes, dirs);
+        TreeSet ExaminingStates = generateInitialStates((long)noStates, numNodes, dirs);
         boolean[][] _states = mod.jmut.core.Util.convertInitialStatesToBoolean(ExaminingStates, numNodes);
         String stateSet = numNodes + "Nodes_" + noStates + " states";
         mod.jmut.core.Calc.states.put(stateSet, new mod.jmut.core.comp.InitialStates(_states));
@@ -46,12 +45,12 @@ public class newInitialStatesGenerator {
     }
 
 
-    public static Set<String> generateInitialStates(long NumOfRandomStates, int numNodes, String[] dirs) throws IOException {
+    public static TreeSet generateInitialStates(long NumOfRandomStates, int numNodes, String[] dirs) throws IOException {
         TreeSet ExaminingStates = new TreeSet();
         int counter = 0;
 
         do {
-            StringBuilder sb = new StringBuilder("");
+            StringBuilder sb = new StringBuilder();
 
             for(int i = 0; i < numNodes; ++i) {
                 sb.append(Math.random() < 0.5D ? "0" : "1");
