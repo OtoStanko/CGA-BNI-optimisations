@@ -6,7 +6,6 @@ package bni.comp;
 
 import bni.InferBN;
 import bni.Utils;
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +25,7 @@ public class GeneBData {
         //List of genes which are mutated
     int[] wildTypes = null;
     
-    private HashMap<Integer, TreeSet<Regulator>> regulators =null;
+    private final HashMap<Integer, TreeSet<Regulator>> regulators;
         //key: gene id, from [1...numGenes]
         //value: regulators genes of the 'key' gene
     public double[][] corrs;
@@ -42,9 +41,9 @@ public class GeneBData {
         this.numGenes = numGenes;                
         this.finalSourceDest = false;
                 
-        this.regulators = new HashMap<Integer, TreeSet<Regulator>>();
+        this.regulators = new HashMap<>();
         for(int g = 1; g <= this.numGenes; g++) {
-            this.regulators.put(g, new TreeSet<Regulator>());
+            this.regulators.put(g, new TreeSet<>());
         }
         
         this.corrs = new double[numGenes][numGenes];
@@ -139,7 +138,7 @@ public class GeneBData {
         //values[mutatedGene]: this row contains gene expression values of all genes 
         //                      as the 'mutatedGene' is perturbed
         int ko;
-        TreeSet<Regulator> links = new TreeSet<Regulator>();
+        TreeSet<Regulator> links = new TreeSet<>();
         int numExps = data.length;
         
         System.out.printf("<Gene %d>\t regulators = ", eg);
@@ -155,7 +154,7 @@ public class GeneBData {
                     if(data[ex][pertG - 1] == data[wtIndex][pertG - 1]) continue;
                 }
                 
-                if(data[ex][pertG - 1] == false) {
+                if(!data[ex][pertG - 1]) {
                     //Knockout case
                     ko = -1;
                 } else {
@@ -170,7 +169,7 @@ public class GeneBData {
                     } 
                     
                     double r = this.corrs[eg - 1][pertG - 1];
-                    boolean sameSign = r * type > 0 ? true: false;
+                    boolean sameSign = r * type > 0;
                     if(! InferBN.TF_TG_CORR_DIFF_SAMESIGN) sameSign = true;
                     
                     if(sameSign && Math.abs(r) >= InferBN.GENE_CORREL_THRESH_MID) {
@@ -182,9 +181,9 @@ public class GeneBData {
                         
                         if(Math.abs(r) >= InferBN.GENE_CORREL_THRESH_MAX) {
                             this.fixedGenes[eg - 1] = true;
-                            System.out.printf("<fix>");
+                            System.out.print("<fix>");
                         }
-                        System.out.printf("<dir>");
+                        System.out.print("<dir>");
                         
                     } else {
                         if(InferBN.DATABASE != InferBN.ECOLI) {
@@ -195,13 +194,12 @@ public class GeneBData {
                                     links.add(new Regulator(pertG, type, Regulator.RANK_INDIRECT_NEGATIVE));
                                 }
                             }
-                            System.out.printf("<indir>");
+                            System.out.print("<indir>");
                         }
                     }
                     
-                    System.out.printf(pertG + " ");
-                } else {
-                    /*double r = this.corrs[eg - 1][g - 1];
+                    System.out.print(pertG + " ");
+                }  /*double r = this.corrs[eg - 1][g - 1];
                     if(Math.abs(r) < InferBN.GENE_CORREL_THRESH_MIN) {
                         links.add(new Regulator(g, 0, Regulator.RANK_NOLINK));
                         System.out.printf(g + "<No> ");
@@ -211,7 +209,6 @@ public class GeneBData {
                             System.out.printf(g + "<Neu> ");
                         }
                     }*/
-                }
             }
         }
         System.out.println();                                
@@ -233,7 +230,7 @@ public class GeneBData {
         }
     }
     
-    public void outputRegulators(PrintWriter pw, String del) throws FileNotFoundException {
+    public void outputRegulators(PrintWriter pw, String del) {
         //PrintWriter pw = new PrintWriter(new FileOutputStream(path),true);                
         
         pw.println("Target gene" + del + "Regulators");
@@ -249,13 +246,13 @@ public class GeneBData {
             for(Regulator dg: dsGenes) {                                
                 String type = "+";
                 if(dg.interaction == -1) type = "-";
-                sbTypes.append(del + type);
+                sbTypes.append(del).append(type);
                 
-                sbGenes.append(del + dg.regulator + type);
-                sbRanks.append(del + dg.rank);
+                sbGenes.append(del).append(dg.regulator).append(type);
+                sbRanks.append(del).append(dg.rank);
             }                        
             
-            pw.println(sbGenes.toString());
+            pw.println(sbGenes);
             //pw.println(sbTypes.toString());
             //pw.println(sbRanks.toString());
         }
@@ -267,7 +264,7 @@ public class GeneBData {
         GeneBData gdata = new GeneBData(nodes.size());
 
         for (Node node : nodes) {
-            int targetID = Integer.valueOf(node.NodeID) + 1;
+            int targetID = Integer.parseInt(node.NodeID) + 1;
             int pos, Im, Om;
             LogicTable logic = node.getLogicTable();
             int numInputs = logic.input.size();
@@ -282,7 +279,7 @@ public class GeneBData {
                     type = -1;
                 }
 
-                int srcID = Integer.valueOf(nodes.get(pos).NodeID) + 1;
+                int srcID = Integer.parseInt(nodes.get(pos).NodeID) + 1;
                 gdata.regulators.get(targetID).add(new Regulator(srcID, type, 0));
             }
         }

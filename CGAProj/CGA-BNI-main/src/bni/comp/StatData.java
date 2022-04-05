@@ -17,6 +17,9 @@ import java.util.TreeSet;
  * @author colin_PC2
  */
 public class StatData {
+    /*
+    Class for stats after the simulation
+    */
     GeneBData gOrigin;
     GeneBData gdata;
     int TP = 0; //True Positve
@@ -34,8 +37,8 @@ public class StatData {
     double Accuracy;        
     
     public StatData(GeneBData gOrigin, GeneBData gdata) {
-        this.gOrigin = gOrigin;
-        this.gdata = gdata;
+        this.gOrigin = gOrigin;  // original network
+        this.gdata = gdata;      // network after simulation
     }
     
     public void stat() {
@@ -55,11 +58,11 @@ public class StatData {
             
             for(int reg_g = 1; reg_g <= numGenes; reg_g++) {
                 if(reg_g == tar_g) continue;
-                
-                for(int t = 0; t < type.length; t++) {
-                    Regulator link = new Regulator(reg_g, type[t], 0);
-                    
-                    if(predictedLinks.contains(link)) {
+
+                for (int i : type) {
+                    Regulator link = new Regulator(reg_g, i, 0);
+
+                    if (predictedLinks.contains(link)) {
                         if (originLinks.contains(link)) {
                             ++TP;
                             sTP = sTP + link.getLink() + tar_g + ",";
@@ -68,11 +71,11 @@ public class StatData {
                             sFP = sFP + link.getLink() + tar_g + ",";
                         }
                     } else {
-                        if(originLinks.contains(link)) {
-                            ++ FN;
+                        if (originLinks.contains(link)) {
+                            ++FN;
                             sFN = sFN + link.getLink() + tar_g + ",";
                         } else {
-                            ++ TN;
+                            ++TN;
 //                            sTN = sTN + link.getLink() + tar_g + ",";
                         }
                     }

@@ -82,10 +82,10 @@ public class InferBN {
 
     // used for finding adequate folders and files
     public static final String[] DREAM3_SIZE = {
-        "Size10", "Size50"//, "Size100"
+        "Size10"//, "Size50"//, "Size100"
     };
     public static final String[] DREAM3_SPECIES = {
-        "Ecoli1", "Ecoli2", "Yeast1", "Yeast2", "Yeast3"
+        "Ecoli1", "Ecoli2"//, "Yeast1", "Yeast2", "Yeast3"
     };
     
     public static final int[] DREAM3_MAX_NO_EDGES = {
@@ -102,9 +102,11 @@ public class InferBN {
             "first"
     };
 
-    //public static String DIR_MyData = DIR_BASE + "Inference\\My_data\\__SIZE__\\Data\\";
-    //public static String DIR_MyData_FILE = "SIZE-SPIECES-bool.csv";
-    //public static String DIR_MyData_NET = DIR_BASE + "Inference\\My_data\\__SIZE__\\Networs\\";
+    /*
+    public static String DIR_MyData = DIR_BASE + "Inference\\My_data\\__SIZE__\\Data\\";
+    public static String DIR_MyData_FILE = "SIZE-SPIECES-bool.csv";
+    public static String DIR_MyData_NET = DIR_BASE + "Inference\\My_data\\__SIZE__\\Networs\\";
+    */
 
     //--- E. coli section (M3D & regulonDB)
     public static String E_COLI_DIR = DIR_BASE + "Inference\\E_coli_v4_Build_6\\";
@@ -326,11 +328,16 @@ public class InferBN {
             prexName = DREAM3_SIZE[actSize] + "_" + DREAM3_SPECIES[sp];
         }
 
-        // 1 - loading original network
+        // DO1 - loading original network
+        /*
+        G1  G2  +
+        G0  G3  -
+        */
         GeneBData gOrigin = Utils.loadOriginNetwork(pathOriginNetw, numGenes);  // only once/ntwrk
+        //1OD
         //gOrigin.outputDownStream(paras[0] + "origin.csv", ",");
 
-        // 2 - loading initial data and computing constraints
+        // DO2 - loading initial data and computing constraints
         // once per network:
         if(g_initial_data == null) {
             // loading initial matrices and computing constraints
@@ -352,8 +359,7 @@ public class InferBN {
             
             Config.out("infer_DREAM", "Retrieved experiment data!");
         }
-
-
+        //2OD
 
         /*
         TO DO apply:
@@ -369,9 +375,9 @@ public class InferBN {
         String workDir = theDir.getName();*/
 
         for(int run = 1; run <= noTrials; ++run) {
+            // DO2.1 create trial (run) subdirectory if it does not exist yet
             File theDir = new File("run" + run + "\\");
             String workDir = theDir.getName();
-            // create trial subdirectory if it does not exist yet
             if (!theDir.exists()) {
                 try {
                     theDir.mkdir();
@@ -380,18 +386,15 @@ public class InferBN {
                 }
             }
             String[] dirs = createFolders(workDir, prexName + "_" + System.currentTimeMillis());  // for each trial
-
+            // 2.1OD
+            /* DO3 inferring
+            g_initial_data - here are constraints saved
+            gOrigin        - original network
+            dirs           - directory of one specific network = !this is the one with the time in it!
+            prexName       - size + species info */
             infer(g_initial_data, gOrigin, dirs, prexName);
+            // 3OD
         }
-
-        // 3 - inferring
-        /*
-        g_initial_data - here are constraints saved
-        gOrigin        - original network
-        dirs           - directory of one specific network = !this is the one with the time in it!
-        prexName       - size + species info
-        */
-
     }
     
     public static void infer_ECOLI(String workDir) throws FileNotFoundException, InterruptedException {
@@ -414,19 +417,19 @@ public class InferBN {
      */
     public static void infer(GeneBData g_initial_data, GeneBData gOrigin, 
             String[] dirs, String prexName) throws InterruptedException, FileNotFoundException {
+        // g_initial_data - initial data, but not the original network
+        // gOrigin        - original network
         
         InferBN infBN = new InferBN(g_initial_data);
-        long startTime = System.currentTimeMillis();
-//        ArrayList<NetInfo> optimalNets = infBN.searchBN(1024, 
-//                SCORE_MAX_ITERATION, SCORE_NO_CONVERGE, SCORE_NO_NEIGHBORS);
 
-        // 3.1. - copmute and return optimal nets - gro of simulation part
-        ArrayList<NetInfo> optimalNets = infBN.GA_searchBN(SCORE_NO_INITIAL_STATES, 
+        // 3.1. - compute and return optimal nets - gro of simulation part
+        long startTime = System.currentTimeMillis();
+        ArrayList<NetInfo> optimalNets = infBN.GA_searchBN(SCORE_NO_INITIAL_STATES,
                 GA_MAX_ITERATION, SCORE_MAX_CONVERGE, GA_POPULATION_SIZE, GA_ELITE_RATIO, dirs);
         if(optimalNets.isEmpty()) return;
-
         long searchTime = (System.currentTimeMillis() - startTime) / 1000;
         Config.out("infer", "Finished searching in " + searchTime + " seconds.");
+
         // 3.2. - write dynamics accuracy results into the files
         Utils.outputDynamicsAccuracy(dirs[0] + prexName,
                 optimalNets, searchTime, DELIM);
@@ -440,8 +443,11 @@ public class InferBN {
             GeneBData gdata = GeneBData.convert(net.netD.nodes);
             StatData stat = new StatData(gOrigin, gdata);
             stat.stat();
-            stat.output(dirs[2] + prexName 
-                    + "_struct_" + net.netD.networkName + ".csv", ",");
+            stat.output(dirs[2]
+                    + prexName
+                    + "_struct_"
+                    + net.netD.networkName
+                    + ".csv", ",");
             stats.add(stat);
         }                
         StatData.outputAverage(stats, dirs[0] + prexName 
@@ -462,8 +468,10 @@ public class InferBN {
         gdata.setData(Utils.parseBoolData(data, offCol, data.length - 1));
         gdata.setExpGenes(Utils.parseIntData(data, 0));        
         if (DATABASE == DREAM3) {
+            // DREAM data have only one steady-state, thus don't need indexing of them
             gdata.setWildTypes(Utils.makeIntArray(data[0].length, 0));
         } else {
+            // other data may have multiple Steady-states => second col is their index
             gdata.setWildTypes(Utils.parseIntData(data, 1));
         }
 

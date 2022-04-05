@@ -1,0 +1,2 @@
+initial_states_generated
+iterations why_ended(1, converged)
