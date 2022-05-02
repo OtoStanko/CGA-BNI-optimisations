@@ -1,2 +1,3 @@
-initial_states_generated
+number of initial_states_generated
+method used for initial states generation - 0 if original_method; 1 if new optimised method
 iterations why_ended(1, converged)

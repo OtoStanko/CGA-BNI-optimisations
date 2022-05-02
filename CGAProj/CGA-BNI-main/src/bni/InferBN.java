@@ -56,7 +56,7 @@ public class InferBN {
     
     //public static final int SCORE_NO_NEIGHBORS = 1;
     public static final int SCORE_NO_TRIALS = 100; //100;
-    public static final int SCORE_NO_INITIAL_STATES = 10000; //2000;
+    public static final int SCORE_NO_INITIAL_STATES = 10000; // 10000;
     
     public static final int GA_MAX_ITERATION = 2000;
     // size of each population (number of networks in population)
@@ -796,6 +796,7 @@ public class InferBN {
 
     /*
     For given network calculate score.
+    Make more effective?
      */
     public static void calScore(NetInfo net, boolean[][] states,
                                 boolean[][] base_data, int[] expGenes, int[] wildTypes) {
@@ -806,19 +807,6 @@ public class InferBN {
         int[] expGenes = g_initial_data.getExpGenes();*/
         int numGenes = base_data[0].length;
 
-
-        // Added code
-        /*
-        //Config.out("Calculating score of network", net.netD.networkName);
-        int s = net.netD.nodes.size();
-        for (int count=0; count < s; count++) {
-            System.out.println(net.netD.networkName + "-> " + count + ": " + net.netD.nodes.get(count).rule);
-            LogicTable logicTableToPrint = net.netD.nodes.get(count).getLogicTable();
-            System.out.println();
-        }
-        */
-        // End of Added code
-        
         //Find all wild-type attractors
         ArrayList<Attractor> AllAttractors = cal.findAttractors_v2(net.netD, states, false);
 
@@ -1358,16 +1346,20 @@ public class InferBN {
         
         return dirs;
     }
-    
+
+    /*
+    Returns List of Optimal networks
+     */
     public ArrayList<NetInfo> GA_searchBN(int noStates, 
             int maxIteration, int maxConverge, int populationSize, double eliteRatio, String[] dirs) throws InterruptedException{
+
         int numGenes = g_initial_data.numGenes;
         //boolean[][] data = g_initial_data.getData();
         ArrayList<NetInfo> population = new ArrayList<>();
         int eliteSize = (int)Math.ceil(eliteRatio * populationSize);
         int noNet;
 
-        // create population of initial networks
+        // create population of initial networks using Barabasi-Albert algorithm from constraints
         for(noNet = 1; noNet <= populationSize; noNet++) {
             String netName = "RBN" + noNet;
             NetInfo initNet = this.createRBN_BA(netName, numGenes, BA_EDGE_TO_ADD, 
@@ -1397,23 +1389,8 @@ public class InferBN {
         int endingReason = 0;
 
         while (true) {
-            ++ noIter;                        
-//            System.out.println("Processing the network: " + net.netD.networkName + " -------------------------------------------------------------------->>>");
-//            System.out.println("Calculating scores .......");
-            
-            /*for(int i = 0; i < population.size(); i++) {
-                NetInfo net = population.get(i);                
-                if(net.fitness >= 0) continue;
-                
-                boolean succ = InferBN.calScore(net, stateSet, this.g_initial_data);
-                
-                if (succ == false || net.fitness < 0) {
-                    Config.out("GA_searchBN", "Failed to calculate score of the network: " + net.netD.networkName);
-                    population.remove(i);
-                    -- i;                    
-                }
-            }*///non-parallel evaluation
-            
+            ++ noIter;
+
             //parallel evaluation
             InferBN.paraEvaluate(population, stateSet, this.g_initial_data);  // parallel evaluation
             //     **********************************************
@@ -1433,35 +1410,36 @@ public class InferBN {
                         my_expGenes, my_wildTypes);
             }*/
             //************************************************
-            
+            //END: parallel evaluation
+
+            // check for networks, that could not been evaluated
+            // remove networks, that could not be evaluated
             for(int i = 0; i < population.size(); i++) {
-                NetInfo net = population.get(i);                
-                
+                NetInfo net = population.get(i);
+
                 if (net.fitness < 0) {
                     Config.out("GA_searchBN", "Failed to calculate score of the network: " + net.netD.networkName);
                     population.remove(i);
-                    -- i;                    
+                    -- i;
                 }
             }
-            //END: parallel evaluation
-            
+
+            // check if population is not empty
             if(population.isEmpty()) {
                 Config.out("GA_searchBN", "Failed to calculate score of all networks! Stoped!");
                 Config.out("GA_searchBN", "Number of iterations: " + noIter);
                 //endingReason = 0;
                 break;
             }
-            
+
+            // sort the population
             Utils.quickSort(population, 0, population.size() - 1);
-//            System.out.printf("Iter %d - scores = ", noIter);
-//            for(int i = 0; i < population.size(); i++) {
-//                System.out.print(population.get(i).fitness + " ");
-//            }
-//            System.out.println();            
-            
+
+            // get the best fitness from sorted population
             double cur_fitness = population.get(population.size() - 1).fitness;
             Config.out("GA_searchBN", "Iter " + noIter + " - best fitness = " + cur_fitness);
-                        
+
+            // TO DO: add commentary
             if(Math.abs(bestFitness - cur_fitness) <= SCORE_PRECISION) {
                 ++ noConvergeF;
                 
@@ -1506,7 +1484,7 @@ public class InferBN {
                 }
             }
             
-            //Mutate population
+            // Mutate population
             int noMutations = populationSize - new_population.size();
             double sumFitness = Utils.sum(population);
             double[] probs_select = new double[population.size()];
@@ -1562,6 +1540,7 @@ public class InferBN {
             population = new_population;
             System.gc();
         }
+        // END of WHILE loop
         
         //select optimal networks
         ArrayList<NetInfo> optimalNets = new ArrayList<>();

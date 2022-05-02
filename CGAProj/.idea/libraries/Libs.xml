@@ -26,6 +26,8 @@
       <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JLibMuta.jar!/" />
       <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JLibMuta.jar!/" />
       <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JLibMuta.jar!/" />
+      <root url="jar://$PROJECT_DIR$/CGA-BNI-main/Libs/JLibMuta.jar!/mod/jmut/core/opencl" />
+      <root url="file://$PROJECT_DIR$/CGA-BNI-main/Libs" />
     </SOURCES>
   </library>
 </component>
